@@ -2,13 +2,23 @@
     let youtubeLeftControls, youtubePlayer;
     let currentVideo;
     let currentVideoBookmarks = [];
+    let bookmarkBtnAdded = false;
 
     chrome.runtime.onMessage.addListener((obj, sender, response) => {
         const {type, value, videoId} = obj;
 
         if(type ==='NEW'){
             currentVideo = videoId;
+            bookmarkBtnAdded = false;
             newVideoLoaded()
+        } else if(type === 'PLAY'){
+            youtubePlayer.currentTime = value;
+        }else if(type=== 'DELETE'){
+            currentVideoBookmarks = currentVideoBookmarks.filter((b) => b.time != value);
+            chrome.storage.sync.set( {[currentVideo]: JSON.stringify(currentVideoBookmarks) })
+
+            response(currentVideoBookmarks);
+
         }
 
     });
@@ -22,6 +32,8 @@
     }
 
     const newVideoLoaded = async () => {
+        if (bookmarkBtnAdded) return;
+        
         const bookmarkBtnExists = document.getElementsByClassName('bookmark-btn')[0]
         currentVideoBookmarks = await fetchBookmarks();
 
@@ -35,9 +47,11 @@
             youtubeLeftControls = document.getElementsByClassName('ytp-left-controls')[0]
             youtubePlayer = document.getElementsByClassName('video-stream')[0]
 
-            youtubeLeftControls.appendChild(bookmarkBtn);
-
-            bookmarkBtn.addEventListener('click', addNewBookmarkEventHandler);
+            if (youtubeLeftControls && youtubePlayer) {
+                youtubeLeftControls.appendChild(bookmarkBtn);
+                bookmarkBtn.addEventListener('click', addNewBookmarkEventHandler);
+                bookmarkBtnAdded = true;
+            }
 
         } 
 
@@ -53,8 +67,8 @@
         currentVideoBookmarks = await fetchBookmarks();
 
         chrome.storage.sync.set({
-        [currentVideo]: JSON.stringify([...currentVideoBookmarks, newBookmark]).sort((a,b) => a.time - b.time),
-    })
+            [currentVideo]: JSON.stringify([...currentVideoBookmarks, newBookmark].sort((a,b) => a.time - b.time))
+        })
 
     };
 
