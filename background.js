@@ -2,12 +2,12 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
   const url = changeInfo.url || tab?.url;
 
-  if (url && url.includes('youtube.com/watch')) {
+  if (changeInfo.url && url.includes('youtube.com/watch')) {
     const queryParameters = url.split('?')[1];
     const urlParameters = new URLSearchParams(queryParameters);
 
     console.log(urlParameters);
-  
+
 
     chrome.tabs.sendMessage(tabId, {
       type: 'NEW',
